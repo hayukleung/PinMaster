@@ -10,7 +10,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -28,7 +27,6 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
     private static final int PIN_STEP_MAX = 20;
     private Paint mPaint;
     private RectF mRectF;
-    private Rect mRectTemp;
     private float mCurrentAngle = 0f;
     private SurfaceHolder mSurfaceHolder;
     private boolean mDrawing = false;
@@ -57,7 +55,6 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
 
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mRectF = new RectF();
-        mRectTemp = new Rect();
     }
 
     @Override
@@ -92,9 +89,6 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         Canvas canvas = null;
         try {
             canvas = mSurfaceHolder.lockCanvas();
-
-            canvas.drawARGB(0, 0, 0, 0);
-
             drawWheel(canvas);
             drawPin(canvas);
         } catch (Exception e) {
@@ -106,8 +100,20 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         }
     }
 
+    /**
+     * 绘制轮盘
+     *
+     * @param canvas
+     */
     private void drawWheel(Canvas canvas) {
-        mRectF.set(0, 0, getWidth(), getWidth());
+        // int count = canvas.save();
+        mRectF.set(getWidth() * 0.48f, getWidth() * 0.9f, getWidth() * 0.52f, getWidth() * 0.9f + getHeight() * 0.05f);
+        mPaint.setColor(Color.BLACK);
+        // canvas.rotate(-currentAngle());
+        canvas.drawRect(mRectF, mPaint);
+        // canvas.restoreToCount(count);
+
+        mRectF.set(getWidth() * 0.1f, getWidth() * 0.1f, getWidth() * 0.9f, getWidth() * 0.9f);
         mPaint.setColor(Color.RED);
         canvas.drawArc(mRectF, 0f + currentAngle(), 90f, true, mPaint);
         canvas.drawArc(mRectF, 180f + currentAngle(), 90f, true, mPaint);
@@ -118,6 +124,11 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         next();
     }
 
+    /**
+     * 绘制子弹
+     *
+     * @param canvas
+     */
     private void drawPin(Canvas canvas) {
 
         // 清除子弹路径
@@ -125,6 +136,8 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
         canvas.drawRect(mRectF, mPaint);
 
+        // 子弹高度 5% getHeight
+        // 子弹宽度 4% getWidth
         if (mShooting) {
             if (PIN_STEP_MAX == mPinStep) {
                 // 射击完成
@@ -132,17 +145,12 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
                 mShooting = false;
                 return;
             }
-
-
             float stepLength = getHeight() * 0.45f / PIN_STEP_MAX;
             mRectF.set(getWidth() * 0.48f, getHeight() * 0.95f - stepLength * mPinStep, getWidth() * 0.52f, getHeight() - stepLength * mPinStep);
             mPaint.setColor(Color.BLACK);
             canvas.drawRect(mRectF, mPaint);
             mPinStep++;
-            Log.e("step", "mPinStep = " + mPinStep);
         } else {
-            // 子弹高度 5% getHeight
-            // 子弹宽度 4% getWidth
             mRectF.set(getWidth() * 0.48f, getHeight() * 0.95f, getWidth() * 0.52f, getHeight());
             mPaint.setColor(Color.BLACK);
             canvas.drawRect(mRectF, mPaint);
