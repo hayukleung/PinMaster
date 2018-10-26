@@ -29,6 +29,8 @@ public class GameActivity extends AppCompatActivity {
         final AppCompatTextView scoreTextView = findViewById(R.id.score);
         scoreTextView.setText(String.format(Locale.CHINA, "%d 分", 0));
         final WheelView wheelView = findViewById(R.id.wheel_view);
+        final PinPathView pinPathView = findViewById(R.id.pin_path_view);
+        final AppCompatButton button = findViewById(R.id.button);
         wheelView.setResultCallback(new ResultCallback() {
             @Override
             public void onContinue(int score) {
@@ -37,6 +39,9 @@ public class GameActivity extends AppCompatActivity {
 
             @Override
             public void onFail(int score) {
+                button.setEnabled(false);
+                pinPathView.clearPath();
+                // wheelView.clearPath();
                 DialogUtil.show2("fail", getSupportFragmentManager(), "游戏结束", "再来一次？", "退出", "再来一次", new DialogUtil.Listener2() {
                     @Override
                     public void onNegativeClick() {
@@ -45,20 +50,23 @@ public class GameActivity extends AppCompatActivity {
 
                     @Override
                     public void onPositiveClick() {
-                        // TODO
+                        scoreTextView.setText(String.format(Locale.CHINA, "%d 分", 0));
+                        wheelView.start();
+                        pinPathView.start();
+                        button.setEnabled(true);
                     }
                 });
                 scoreTextView.setText(String.format(Locale.CHINA, "%d 分", score));
             }
         });
-        final PinPathView pinPathView = findViewById(R.id.pin_path_view);
+
         pinPathView.setHitCallback(new HitCallback() {
             @Override
             public void onHit() {
                 wheelView.hit();
             }
         });
-        AppCompatButton button = findViewById(R.id.button);
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

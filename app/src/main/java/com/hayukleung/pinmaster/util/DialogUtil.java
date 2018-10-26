@@ -32,6 +32,7 @@ public class DialogUtil {
         array.add(optNegative);
         array.add(optPositive);
         final GameDialog fragment = GameDialog.getInstance(fragmentManager, content, array, tag);
+        fragment.setCancelable(false);
         fragment.show(fragmentManager);
         if (null != title) {
             fragment.setTitle(title);

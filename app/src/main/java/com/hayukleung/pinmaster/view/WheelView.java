@@ -69,9 +69,7 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        mDrawing = true;
-        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
-        singleThreadExecutor.execute(this);
+        start();
     }
 
     @Override
@@ -99,7 +97,7 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         Canvas canvas = null;
         try {
             canvas = mSurfaceHolder.lockCanvas();
-            clearCache(canvas);
+            clearPath(canvas);
             drawWheel(canvas);
             for (Pin pin : mPinList) {
                 drawPin(canvas, pin.getAngle());
@@ -113,7 +111,7 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         }
     }
 
-    private void clearCache(Canvas canvas) {
+    private void clearPath(Canvas canvas) {
         // 清除缓存
         mRectF.set(0, 0, getWidth(), getHeight());
         mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
@@ -213,6 +211,34 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         if (null != mResultCallback) {
             mResultCallback.onContinue(mPinList.size());
         }
+    }
+
+    public void start() {
+        mPinList.clear();
+        mDrawing = true;
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        singleThreadExecutor.execute(this);
+    }
+
+    public void clearPath() {
+        mDrawing = false;
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        singleThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                Canvas canvas = null;
+                try {
+                    canvas = mSurfaceHolder.lockCanvas();
+                    clearPath(canvas);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (canvas != null) {
+                        mSurfaceHolder.unlockCanvasAndPost(canvas);
+                    }
+                }
+            }
+        });
     }
 
     private float currentAngle() {

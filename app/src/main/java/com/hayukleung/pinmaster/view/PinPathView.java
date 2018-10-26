@@ -73,9 +73,7 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        mDrawing = true;
-        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
-        singleThreadExecutor.execute(this);
+        start();
     }
 
     @Override
@@ -113,6 +111,13 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
         }
     }
 
+    private void clearPath(Canvas canvas) {
+        // 清除子弹路径
+        mRectF.set(getWidth() / 2f - mPinWidth / 2f, 0, getWidth() / 2f + mPinWidth / 2f, getHeight());
+        mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
+        canvas.drawRect(mRectF, mPaint);
+    }
+
     /**
      * 绘制子弹
      *
@@ -120,10 +125,7 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
      */
     private void drawPin(Canvas canvas) {
 
-        // 清除子弹路径
-        mRectF.set(getWidth() / 2f - mPinWidth / 2f, 0, getWidth() / 2f + mPinWidth / 2f, getHeight());
-        mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
-        canvas.drawRect(mRectF, mPaint);
+        clearPath(canvas);
 
         if (mShooting) {
             if (PIN_STEP_MAX == mPinStep) {
@@ -168,6 +170,37 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
         }
         mShooting = true;
         mPinStep = 0;
+    }
+
+    public void start() {
+        mDrawing = true;
+        mShooting = false;
+        mPinStep = 0;
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        singleThreadExecutor.execute(this);
+    }
+
+    public void clearPath() {
+        mDrawing = false;
+        mShooting = false;
+        mPinStep = 0;
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        singleThreadExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                Canvas canvas = null;
+                try {
+                    canvas = mSurfaceHolder.lockCanvas();
+                    clearPath(canvas);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (canvas != null) {
+                        mSurfaceHolder.unlockCanvasAndPost(canvas);
+                    }
+                }
+            }
+        });
     }
 
     public void setPinHeight(float pinHeight) {
