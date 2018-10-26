@@ -15,30 +15,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 转轮
+ * 子弹路径
  * <p>
  * Created by hayukleung@gmail.com on 2018/10/25.
  */
-public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
     private static final float DELTA_ANGLE = 3f;
+    private static final int PIN_STEP_MAX = 20;
     private Paint mPaint;
     private RectF mRectF;
     private float mCurrentAngle = 0f;
     private SurfaceHolder mSurfaceHolder;
     private boolean mDrawing = false;
+    private boolean mShooting = false;
+    private int mPinStep = 0;
     private float mPinWidth;
     private float mPinHeight;
 
-    public WheelView(Context context) {
+    public PinPathView(Context context) {
         this(context, null);
     }
 
-    public WheelView(Context context, AttributeSet attrs) {
+    public PinPathView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public WheelView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public PinPathView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr, 0);
     }
@@ -86,7 +89,7 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         Canvas canvas = null;
         try {
             canvas = mSurfaceHolder.lockCanvas();
-            drawWheel(canvas);
+            drawPin(canvas);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -97,45 +100,34 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
     }
 
     /**
-     * 绘制轮盘
+     * 绘制子弹
      *
      * @param canvas
      */
-    private void drawWheel(Canvas canvas) {
+    private void drawPin(Canvas canvas) {
 
-        // 转盘半径
-        float radiusWheel = getWidth() * 0.8f / 2f;
-        // 区域半径
-        float radiusRegion = getWidth() / 2f;
-        float radiusDelta = radiusRegion - radiusWheel;
-
-        // 子弹高度
-        mPinHeight = radiusDelta;
-        // 子弹宽度
-        mPinWidth = mPinHeight / 2f;
-
-        // 清除缓存
-        mRectF.set(0, 0, getWidth(), getHeight());
+        // 清除子弹路径
+        mRectF.set(getWidth() / 2f - mPinWidth / 2f, 0, getWidth() / 2f + mPinWidth / 2f, getHeight());
         mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
         canvas.drawRect(mRectF, mPaint);
 
-        int count = canvas.save();
-        mRectF.set(radiusRegion - mPinWidth / 2f, getHeight() - mPinHeight, radiusRegion + mPinWidth / 2f, getHeight());
-        mPaint.setColor(Color.BLACK);
-        canvas.rotate(currentAngle(), getWidth() / 2f, getHeight() / 2f);
-        canvas.drawRect(mRectF, mPaint);
-        canvas.restoreToCount(count);
-
-        mRectF.set(radiusDelta, radiusDelta, getWidth() - radiusDelta, getWidth() - radiusDelta);
-
-        mPaint.setColor(Color.RED);
-        canvas.drawArc(mRectF, 0f + currentAngle(), 90f, true, mPaint);
-        canvas.drawArc(mRectF, 180f + currentAngle(), 90f, true, mPaint);
-        mPaint.setColor(Color.WHITE);
-        canvas.drawArc(mRectF, 90f + currentAngle(), 90f, true, mPaint);
-        canvas.drawArc(mRectF, 270f + currentAngle(), 90f, true, mPaint);
-
-        next();
+        if (mShooting) {
+            if (PIN_STEP_MAX == mPinStep) {
+                // 射击完成
+                mPinStep = 0;
+                mShooting = false;
+                return;
+            }
+            float stepLength = getHeight() / PIN_STEP_MAX;
+            mRectF.set(getWidth() / 2f - mPinWidth / 2f, getHeight() - mPinHeight - stepLength * mPinStep, getWidth() / 2f + mPinWidth / 2f, getHeight() - stepLength * mPinStep);
+            mPaint.setColor(Color.BLACK);
+            canvas.drawRect(mRectF, mPaint);
+            mPinStep++;
+        } else {
+            mRectF.set(getWidth() / 2f - mPinWidth / 2f, getHeight() - mPinHeight, getWidth() / 2f + mPinWidth / 2f, getHeight());
+            mPaint.setColor(Color.BLACK);
+            canvas.drawRect(mRectF, mPaint);
+        }
     }
 
     @Override
@@ -144,24 +136,23 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         int hSize = MeasureSpec.getSize(heightMeasureSpec);
         int size = wSize < hSize ? wSize : hSize;
         int wMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
-        int hMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
+        int hMeasureSpec = MeasureSpec.makeMeasureSpec((int) (size * 1.5f), MeasureSpec.EXACTLY);
         setMeasuredDimension(wMeasureSpec, hMeasureSpec);
     }
 
-    private float currentAngle() {
-        return mCurrentAngle;
+    public void shoot() {
+        if (mShooting) {
+            return;
+        }
+        mShooting = true;
+        mPinStep = 0;
     }
 
-    private void next() {
-        mCurrentAngle += DELTA_ANGLE;
-        mCurrentAngle = mCurrentAngle % 360f;
+    public void setPinHeight(float pinHeight) {
+        mPinHeight = pinHeight;
     }
 
-    public float getPinHeight() {
-        return mPinHeight;
-    }
-
-    public float getPinWidth() {
-        return mPinWidth;
+    public void setPinWidth(float pinWidth) {
+        mPinWidth = pinWidth;
     }
 }

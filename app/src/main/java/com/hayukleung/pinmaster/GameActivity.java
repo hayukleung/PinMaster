@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.view.View;
 
+import com.hayukleung.pinmaster.view.PinPathView;
 import com.hayukleung.pinmaster.view.WheelView;
 
 /**
@@ -20,11 +21,14 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         final WheelView wheelView = findViewById(R.id.wheel_view);
+        final PinPathView pinPathView = findViewById(R.id.pin_path_view);
         AppCompatButton button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wheelView.shoot();
+                pinPathView.setPinHeight(wheelView.getPinHeight());
+                pinPathView.setPinWidth(wheelView.getPinWidth());
+                pinPathView.shoot();
             }
         });
     }
