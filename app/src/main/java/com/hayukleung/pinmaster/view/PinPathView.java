@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
@@ -33,6 +34,8 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
     private float mPinWidth;
     private float mPinHeight;
 
+    private HitCallback mHitCallback;
+
     public PinPathView(Context context) {
         this(context, null);
     }
@@ -44,6 +47,10 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
     public PinPathView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr, 0);
+    }
+
+    public void setHitCallback(@NonNull HitCallback hitCallback) {
+        mHitCallback = hitCallback;
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
@@ -116,6 +123,9 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
                 // 射击完成
                 mPinStep = 0;
                 mShooting = false;
+                if (null != mHitCallback) {
+                    mHitCallback.onHit();
+                }
                 return;
             }
             float stepLength = getHeight() / PIN_STEP_MAX;

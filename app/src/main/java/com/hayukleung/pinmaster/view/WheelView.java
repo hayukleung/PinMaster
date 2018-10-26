@@ -11,6 +11,9 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,7 +24,8 @@ import java.util.concurrent.Executors;
  */
 public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
-    private static final float DELTA_ANGLE = 3f;
+    private static final float DELTA_ANGLE = 1f;
+    private final List<Float> mPinList = new ArrayList<>();
     private Paint mPaint;
     private RectF mRectF;
     private float mCurrentAngle = 0f;
@@ -86,7 +90,11 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         Canvas canvas = null;
         try {
             canvas = mSurfaceHolder.lockCanvas();
+            clearCache(canvas);
             drawWheel(canvas);
+            for (Float pin : mPinList) {
+                drawPin(canvas, pin);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -94,6 +102,13 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
                 mSurfaceHolder.unlockCanvasAndPost(canvas);
             }
         }
+    }
+
+    private void clearCache(Canvas canvas) {
+        // 清除缓存
+        mRectF.set(0, 0, getWidth(), getHeight());
+        mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
+        canvas.drawRect(mRectF, mPaint);
     }
 
     /**
@@ -114,18 +129,6 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         // 子弹宽度
         mPinWidth = mPinHeight / 2f;
 
-        // 清除缓存
-        mRectF.set(0, 0, getWidth(), getHeight());
-        mPaint.setColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
-        canvas.drawRect(mRectF, mPaint);
-
-        int count = canvas.save();
-        mRectF.set(radiusRegion - mPinWidth / 2f, getHeight() - mPinHeight, radiusRegion + mPinWidth / 2f, getHeight());
-        mPaint.setColor(Color.BLACK);
-        canvas.rotate(currentAngle(), getWidth() / 2f, getHeight() / 2f);
-        canvas.drawRect(mRectF, mPaint);
-        canvas.restoreToCount(count);
-
         mRectF.set(radiusDelta, radiusDelta, getWidth() - radiusDelta, getWidth() - radiusDelta);
 
         mPaint.setColor(Color.RED);
@@ -138,6 +141,18 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         next();
     }
 
+    private void drawPin(Canvas canvas, float angle) {
+        // 区域半径
+        float radiusRegion = getWidth() / 2f;
+
+        int count = canvas.save();
+        mRectF.set(radiusRegion - mPinWidth / 2f, getHeight() - mPinHeight, radiusRegion + mPinWidth / 2f, getHeight());
+        mPaint.setColor(Color.BLACK);
+        canvas.rotate(currentAngle() - angle, getWidth() / 2f, getHeight() / 2f);
+        canvas.drawRect(mRectF, mPaint);
+        canvas.restoreToCount(count);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int wSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -146,6 +161,12 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
         int wMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
         int hMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
         setMeasuredDimension(wMeasureSpec, hMeasureSpec);
+    }
+
+    public void hit() {
+        mPinList.add(currentAngle());
+        Collections.sort(mPinList);
+
     }
 
     private float currentAngle() {
