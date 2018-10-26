@@ -6,8 +6,11 @@ import android.support.annotation.UiThread;
  * Created by hayukleung@gmail.com on 2018/10/26.
  */
 
-public interface HitCallback {
+public interface ResultCallback {
 
     @UiThread
-    void onHit();
+    void onContinue(int score);
+
+    @UiThread
+    void onFail(int score);
 }

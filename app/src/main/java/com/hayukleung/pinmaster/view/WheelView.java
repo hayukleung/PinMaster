@@ -6,10 +6,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import com.hayukleung.pinmaster.model.Pin;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +28,8 @@ import java.util.concurrent.Executors;
 public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
     private static final float DELTA_ANGLE = 1f;
-    private final List<Float> mPinList = new ArrayList<>();
+    private static final int MIN_DELTA_ANGLE = 300;
+    private final List<Pin> mPinList = new ArrayList<>();
     private Paint mPaint;
     private RectF mRectF;
     private float mCurrentAngle = 0f;
@@ -33,6 +37,7 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
     private boolean mDrawing = false;
     private float mPinWidth;
     private float mPinHeight;
+    private ResultCallback mResultCallback;
 
     public WheelView(Context context) {
         this(context, null);
@@ -45,6 +50,10 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
     public WheelView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr, 0);
+    }
+
+    public void setResultCallback(@NonNull ResultCallback resultCallback) {
+        mResultCallback = resultCallback;
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
@@ -92,8 +101,8 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
             canvas = mSurfaceHolder.lockCanvas();
             clearCache(canvas);
             drawWheel(canvas);
-            for (Float pin : mPinList) {
-                drawPin(canvas, pin);
+            for (Pin pin : mPinList) {
+                drawPin(canvas, pin.getAngle());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -164,9 +173,46 @@ public class WheelView extends SurfaceView implements SurfaceHolder.Callback, Ru
     }
 
     public void hit() {
-        mPinList.add(currentAngle());
+        Pin pin = new Pin(currentAngle());
+        if (mPinList.contains(pin)) {
+            onFail();
+            return;
+        }
+        mPinList.add(pin);
+        int size = mPinList.size();
+        if (1 == size) {
+            onContinue();
+            return;
+        }
         Collections.sort(mPinList);
+        int index = mPinList.indexOf(pin);
+        int delta;
+        // 前一个
+        delta = pin.deltaX100(mPinList.get((size + index - 1) % size));
+        if (delta < MIN_DELTA_ANGLE) {
+            onFail();
+            return;
+        }
+        // 后一个
+        delta = pin.deltaX100(mPinList.get((index + 1) % size));
+        if (delta < MIN_DELTA_ANGLE) {
+            onFail();
+        } else {
+            onContinue();
+        }
+    }
 
+    private void onFail() {
+        if (null != mResultCallback) {
+            mResultCallback.onFail(mPinList.size());
+        }
+        mDrawing = false;
+    }
+
+    private void onContinue() {
+        if (null != mResultCallback) {
+            mResultCallback.onContinue(mPinList.size());
+        }
     }
 
     private float currentAngle() {

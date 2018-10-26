@@ -6,12 +6,16 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,6 +39,7 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
     private float mPinHeight;
 
     private HitCallback mHitCallback;
+    private UIHandler mUIHandler;
 
     public PinPathView(Context context) {
         this(context, null);
@@ -54,6 +59,8 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+
+        mUIHandler = new UIHandler(this);
 
         mSurfaceHolder = getHolder();
         mSurfaceHolder.addCallback(this);
@@ -124,7 +131,12 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
                 mPinStep = 0;
                 mShooting = false;
                 if (null != mHitCallback) {
-                    mHitCallback.onHit();
+                    mUIHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            mHitCallback.onHit();
+                        }
+                    });
                 }
                 return;
             }
@@ -164,5 +176,23 @@ public class PinPathView extends SurfaceView implements SurfaceHolder.Callback, 
 
     public void setPinWidth(float pinWidth) {
         mPinWidth = pinWidth;
+    }
+
+    private static class UIHandler extends Handler {
+
+        private final WeakReference<PinPathView> ref;
+
+        UIHandler(PinPathView pinPathView) {
+            super(Looper.getMainLooper());
+            ref = new WeakReference<>(pinPathView);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            PinPathView pinPathView = ref.get();
+            if (null == pinPathView) {
+                return;
+            }
+        }
     }
 }
